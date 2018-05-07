@@ -252,6 +252,8 @@ NSString *const ETag = @"ETag";
  @param requestURL 原JS请求地址
  */
 - (void)downloadJsFile:(NSURL *)requestURL md5Key:(NSString *)md5Key {
+ // 下载前判断文件是否存在 (针对使用过程清楚缓存导致文件夹不存在)
+    [FileUnit creatDirectoryWithPath:self.localLibrary];
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
         // 下载路径+文件名称
         NSString *downloadPath = [NSString stringWithFormat:@"%@%@.js", self.localLibrary, md5Key];
