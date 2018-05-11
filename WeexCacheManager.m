@@ -105,7 +105,7 @@
 
 /*---------------------- 缓存管理类 ----------------------*/
 
-NSInteger const UpdateTime = 2 * 60 * 60; // 更新时间, 若在此时间内则不需要更新
+NSInteger const UpdateTime = 0.5 * 60 * 60; // 更新时间, 若在此时间内则不需要更新
 
 NSString *const CacheHost = @"CacheHost";
 
@@ -145,6 +145,19 @@ NSString *const ETag = @"ETag";
     return manager;
 }
 
+
+/**
+ 回调并置空
+
+ @param URL URL
+ */
+- (void)callBackURL:(NSURL *)URL {
+    if (self.callBack) {
+        self.callBack(URL);
+        self.callBack = nil;
+    }
+}
+
 /**
  获取实际加载的JS路径URL
  
@@ -162,7 +175,7 @@ NSString *const ETag = @"ETag";
     NSString *fileName = [[[URL relativePath] componentsSeparatedByString:@"/"] lastObject];
     if ([fileName rangeOfString:@".html"].location != NSNotFound) {
         // 降级的HTML地址 无需考虑缓存
-        if (self.callBack) self.callBack(URL);
+        [self callBackURL:URL];
         return;
     }
     // 文件路径的MD5值, 用于判断本地是否存在该文件
@@ -198,7 +211,7 @@ NSString *const ETag = @"ETag";
                     [cacheJsDic setValue:[NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]] forKey:@"Timestamp"];
                     [self.cachePlist setValue:cacheJsDic forKey:md5Key];
                     // 加载缓存JS文件
-                    if (self.callBack) self.callBack([self getJsCacheURL:jsCachePath originalURL:URL md5Key:md5Key]);
+                    [self callBackURL:[self getJsCacheURL:jsCachePath originalURL:URL md5Key:md5Key]];
                 } else {
                     // 服务端更新了, 删除本地JS, 并下载最新JS
                     [FileUnit removeFileOfPath:jsCachePath];
@@ -212,11 +225,11 @@ NSString *const ETag = @"ETag";
                 [self saveCachePlist];
             } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
                 // 请求失败, 可能无网络 加载缓存JS
-                if (self.callBack) self.callBack([self getJsCacheURL:jsCachePath originalURL:URL md5Key:md5Key]);
+                [self callBackURL:[self getJsCacheURL:jsCachePath originalURL:URL md5Key:md5Key]];
             }];
         } else {
             // 更新时间内, 直接加载缓存JS
-            if (self.callBack) self.callBack([self getJsCacheURL:jsCachePath originalURL:URL md5Key:md5Key]);
+            [self callBackURL:[self getJsCacheURL:jsCachePath originalURL:URL md5Key:md5Key]];
         }
         return;
     }
@@ -252,7 +265,7 @@ NSString *const ETag = @"ETag";
  @param requestURL 原JS请求地址
  */
 - (void)downloadJsFile:(NSURL *)requestURL md5Key:(NSString *)md5Key {
- // 下载前判断文件是否存在 (针对使用过程清楚缓存导致文件夹不存在)
+    // 下载前判断文件是否存在 (针对使用过程清楚缓存导致文件夹不存在)
     [FileUnit creatDirectoryWithPath:self.localLibrary];
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
         // 下载路径+文件名称
@@ -277,11 +290,11 @@ NSString *const ETag = @"ETag";
                 // 保存Plist
                 [self saveCachePlist];
                 // 加载缓存的JS
-                if (self.callBack) self.callBack([self getJsCacheURL:downloadPath originalURL:requestURL md5Key:md5Key]);
+                [self callBackURL:[self getJsCacheURL:downloadPath originalURL:requestURL md5Key:md5Key]];
             } else {
                 NSLog(@"JS文件缓存失败:%@", [error description]);
                 // 加载出错直接加载URL
-                if (self.callBack) self.callBack(requestURL);
+                [self callBackURL:requestURL];
             }
         }];
         [task resume];
