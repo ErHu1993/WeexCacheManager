@@ -1,6 +1,5 @@
 //
 //  WeexCacheManager.h
-//  blife-ios
 //
 //  Created by 胡广宇 on 2018/4/25.
 //  Copyright © 2018年 www.witgo.cn. All rights reserved.
